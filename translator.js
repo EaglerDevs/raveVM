@@ -1,5 +1,5 @@
 function RaveVM(javaCode) {
-    // Basic translation with enhanced support
+    // Enhanced translation with more features
     let pythonCode = javaCode
         .replace(/public\s+/g, '') // Remove access modifiers
         .replace(/private\s+/g, '') // Remove private modifier
@@ -21,7 +21,15 @@ function RaveVM(javaCode) {
         .replace(/int\s+/g, '') // Remove int keyword for simplicity
         .replace(/String\s+/g, '') // Remove String keyword for simplicity
         .replace(/boolean\s+/g, 'bool ') // Translate boolean type
-        .replace(/(true|false)\s*;/g, '$1'); // Boolean values
+        .replace(/(true|false)\s*;/g, '$1') // Boolean values
+        .replace(/ArrayList<(\w+)>\s+(\w+)\s*=\s*new ArrayList<\1>\(\);/g, '$2 = []') // ArrayList to list
+        .replace(/(\w+)\s+\[\]\s+(\w+)\s*=\s*new (\w+)\[\d+\];/g, '$2 = [$1 for _ in range(0)]') // Array declaration
+        .replace(/this\.(\w+)\s*=\s*(.+?);/g, 'self.$1 = $2') // 'this' keyword handling for class attributes
+        .replace(/(\w+)\s*\(\s*(.*?)\s*\)/g, 'def $1($2):') // Method declarations
+        .replace(/new\s+(\w+)\s*\(\)/g, '$1()') // Object instantiation
+        .replace(/(\w+)\s*\[(\d+)\]/g, '$1[$2]') // Array access
+        .replace(/break;/g, 'break') // Break statement
+        .replace(/continue;/g, 'continue') // Continue statement
 
     return pythonCode.trim(); // Return trimmed code
 }
