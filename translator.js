@@ -1,3 +1,6 @@
+console.log("stop stalking me orphanlol")
+alert("retard")
+
 function RaveVM(javaCode) {
     // Enhanced translation with more features
     let pythonCode = javaCode
