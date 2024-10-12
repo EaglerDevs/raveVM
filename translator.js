@@ -1,10 +1,9 @@
-
-console.log('orphan is so gay')
 // Function to translate Java code to Python
 function RaveVM(javaCode) {
     let indentLevel = 0; // Track current indentation level
     let pythonCode = javaCode
         .replace(/^\s*/gm, '') // Trim leading spaces
+        .replace(/import\s+\w+;.*\n/g, '') // Remove Java import statements
         .replace(/\{\s*/g, function() { // Handle curly braces
             indentLevel++;
             return '\n' + ' '.repeat(indentLevel * 4) + ':';
@@ -78,4 +77,14 @@ document.getElementById('translateBtn').addEventListener('click', function() {
     var javaCode = document.getElementById('javaInput').value; // Get the Java input
     var pythonCode = RaveVM(javaCode); // Translate Java to Python
     document.getElementById('pythonOutput').textContent = pythonCode; // Display Python code
+});
+
+// Add event listener for the "Copy Code" button
+document.getElementById('copyBtn').addEventListener('click', function() {
+    var pythonCode = document.getElementById('pythonOutput').textContent;
+    navigator.clipboard.writeText(pythonCode).then(function() {
+        alert('Python code copied to clipboard!');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+    });
 });
