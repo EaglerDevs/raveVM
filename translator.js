@@ -1,87 +1,155 @@
-// Function to translate Java code to Python
-function RaveVM(javaCode) {
-    let indentLevel = 0; // Track current indentation level
-    let pythonCode = javaCode
-        .replace(/^\s*/gm, '') // Trim leading spaces
-        .replace(/import\s+\w+;.*\n/g, '') // Remove Java import statements
-        .replace(/\{\s*/g, function() { // Handle curly braces
-            indentLevel++;
-            return '\n' + ' '.repeat(indentLevel * 4) + ':';
-        })
-        .replace(/\}\s*/g, function() {
-            indentLevel--;
-            return '\n' + ' '.repeat(indentLevel * 4);
-        })
-        .replace(/if\s*\((.*?)\)\s*\{?/g, function(_, condition) {
-            return '\n' + ' '.repeat(indentLevel * 4) + 'if ' + condition + ':';
-        })
-        .replace(/else\s*\{?/g, function() {
-            return '\n' + ' '.repeat(indentLevel * 4) + 'else:';
-        })
-        .replace(/else\s+if\s*\((.*?)\)\s*\{?/g, function(_, condition) {
-            return '\n' + ' '.repeat(indentLevel * 4) + 'elif ' + condition + ':';
-        })
-        .replace(/public\s+class\s+(\w+)/g, 'class $1:') // Class declarations
-        .replace(/public\s+(\w+)\s+(\w+)\s*\((.*?)\)\s*\{/g, function(_, returnType, methodName, args) {
-            return 'def ' + methodName + '(' + args + '):'; // Method declarations
-        })
-        .replace(/public\s+static\s+void\s+main\s*\(String\[\]\s*(\w+)\)\s*\{/g, 'if __name__ == "__main__":') // Main method
-        .replace(/new\s+ArrayList<(\w+)>\s+(\w+)\s*=\s*new ArrayList<\1>\(\);/g, '$2 = []') // ArrayList to list
-        .replace(/new\s+HashMap<(\w+),\s*(\w+)>\s+(\w+)\s*=\s*new HashMap<\1,\2>\(\);/g, '$3 = {}') // HashMap to dict
-        .replace(/new\s+(\w+)\[\d+\]/g, '[]') // Array initialization
-        .replace(/System\.out\.println\((.+?)\);/g, 'print($1)') // System.out.println -> print
-        .replace(/return\s+(.+?);/g, 'return $1') // return statement
-        .replace(/(\w+)\s*\[\]\s+(\w+)\s*=\s*new\s+(\w+)\[\d+\];/g, '$2 = [$1 for _ in range($3)]') // Array declaration
-        .replace(/private\s+/g, '') // Remove private keyword
-        .replace(/protected\s+/g, '') // Remove protected keyword
-        .replace(/public\s+/g, '') // Remove public keyword
-        .replace(/final\s+/g, '') // Remove final keyword
-        .replace(/static\s+/g, '') // Remove static keyword
-        .replace(/void\s+/g, '') // Remove void keyword
-        .replace(/int\s+/g, '') // Remove int (Python doesn't use type declarations like this)
-        .replace(/boolean\s+/g, 'bool ') // Translate boolean to Python's bool
-        .replace(/String\s+/g, 'str ') // Convert String to Python's str
-        .replace(/(\w+)\s+(\w+)\s*=\s*(.*?);/g, '$1 $2 = $3') // Variable declarations
-        .replace(/this\.(\w+)\s*=\s*(.+?);/g, 'self.$1 = $2') // "this" references in classes
-        .replace(/(\w+)\s*\[(\d+)\]/g, '$1[$2]') // Array access
-        .replace(/for\s*\((.*?)\)\s*\{/g, function(_, condition) {
-            return '\n' + ' '.repeat(indentLevel * 4) + 'for ' + condition + ':';
-        })
-        .replace(/while\s*\((.*?)\)\s*\{/g, function(_, condition) {
-            return '\n' + ' '.repeat(indentLevel * 4) + 'while ' + condition + ':';
-        })
-        .replace(/switch\s*\((.*?)\)\s*\{/g, function(_, condition) {
-            return '\n' + ' '.repeat(indentLevel * 4) + 'match ' + condition + ':';
-        })
-        .replace(/case\s+(\w+)\s*:/g, function(_, caseValue) {
-            return '\n' + ' '.repeat(indentLevel * 4) + '    case ' + caseValue + ':';
-        })
-        .replace(/default\s*:/g, function() {
-            return '\n' + ' '.repeat(indentLevel * 4) + '    default:';
-        })
-        .replace(/throw\s+new\s+(\w+)\((.*?)\);/g, 'raise $1($2)') // Exception handling (throw -> raise)
-        .replace(/try\s*\{([\s\S]*?)\}\s*catch\s*\((\w+)\)\s*\{([\s\S]*?)\}/g, function(_, tryBlock, exceptionType, catchBlock) {
-            return `try:\n${' '.repeat(indentLevel * 4)}    ${tryBlock}\n${' '.repeat(indentLevel * 4)}except ${exceptionType}:\n${' '.repeat(indentLevel * 4)}    ${catchBlock}`;
-        })
-        .replace(/super\(\)/g, 'super()') // super() calls
-        .replace(/extends\s+(\w+)/g, 'extends $1') // Inheritance (handling extends)
-        .replace(/implements\s+(\w+)/g, 'implements $1') // Implements interfaces
-        .replace(/interface\s+(\w+)\s*\{/g, 'class $1(ABC):') // Interfaces to Python ABC
-        .replace(/abstract\s+class\s+(\w+)/g, 'class $1(ABC):') // Abstract class to Python ABC class
+class Token {
+    constructor(type, value) {
+        this.type = type;
+        this.value = value;
+    }
+}
 
-    return pythonCode.trim(); // Return trimmed code
+class Lexer {
+    constructor(input) {
+        this.input = input;
+        this.current = 0;
+    }
+
+    nextToken() {
+        while (this.current < this.input.length) {
+            const char = this.input[this.current];
+
+            // Skip whitespace
+            if (/\s/.test(char)) {
+                this.current++;
+                continue;
+            }
+
+            // Handle keywords and identifiers
+            if (/[a-zA-Z]/.test(char)) {
+                let start = this.current;
+                while (/[a-zA-Z0-9]/.test(this.input[this.current])) {
+                    this.current++;
+                }
+                const value = this.input.slice(start, this.current);
+                return new Token('IDENTIFIER', value);
+            }
+
+            // Handle symbols
+            if (char === '{') {
+                this.current++;
+                return new Token('LBRACE', '{');
+            }
+            if (char === '}') {
+                this.current++;
+                return new Token('RBRACE', '}');
+            }
+            if (char === ';') {
+                this.current++;
+                return new Token('SEMICOLON', ';');
+            }
+            if (char === '(') {
+                this.current++;
+                return new Token('LPAREN', '(');
+            }
+            if (char === ')') {
+                this.current++;
+                return new Token('RPAREN', ')');
+            }
+            if (char === '=') {
+                this.current++;
+                return new Token('ASSIGN', '=');
+            }
+            if (char === 'i' && this.input.substr(this.current, 1) === 'f') {
+                this.current += 2;
+                return new Token('IF', 'if');
+            }
+            // Add more keywords and symbols as needed...
+
+            throw new Error(`Unexpected character: ${char}`);
+        }
+
+        return new Token('EOF', null);
+    }
+}
+
+class Parser {
+    constructor(lexer) {
+        this.lexer = lexer;
+        this.currentToken = this.lexer.nextToken();
+    }
+
+    parse() {
+        const statements = [];
+        while (this.currentToken.type !== 'EOF') {
+            statements.push(this.statement());
+        }
+        return statements;
+    }
+
+    statement() {
+        if (this.currentToken.type === 'IF') {
+            return this.ifStatement();
+        }
+        // Handle other statements...
+        throw new Error('Unknown statement type');
+    }
+
+    ifStatement() {
+        this.eat('IF');
+        this.eat('LPAREN');
+        const condition = this.currentToken.value; // Simplified for demo
+        this.eat('IDENTIFIER'); // consume condition
+        this.eat('RPAREN');
+        this.eat('LBRACE');
+        const body = this.body();
+        this.eat('RBRACE');
+        return { type: 'IF', condition, body };
+    }
+
+    body() {
+        // Simplified for demo, would parse multiple statements
+        const statement = this.currentToken.value; // Placeholder
+        this.eat('IDENTIFIER'); // consume statement
+        this.eat('SEMICOLON');
+        return [statement];
+    }
+
+    eat(tokenType) {
+        if (this.currentToken.type === tokenType) {
+            const token = this.currentToken;
+            this.currentToken = this.lexer.nextToken();
+            return token;
+        }
+        throw new Error(`Expected token type: ${tokenType}, got: ${this.currentToken.type}`);
+    }
+}
+
+class JavaToPythonConverter {
+    convert(javaCode) {
+        const lexer = new Lexer(javaCode);
+        const parser = new Parser(lexer);
+        const ast = parser.parse();
+        return this.generatePython(ast);
+    }
+
+    generatePython(statements) {
+        return statements.map(statement => {
+            if (statement.type === 'IF') {
+                return `if ${statement.condition}:\n    ${statement.body.join('\n    ')}`;
+            }
+            // Handle other types...
+        }).join('\n');
+    }
 }
 
 // Add event listener to the "Translate" button
 document.getElementById('translateBtn').addEventListener('click', function() {
-    var javaCode = document.getElementById('javaInput').value; // Get the Java input
-    var pythonCode = RaveVM(javaCode); // Translate Java to Python
+    const javaCode = document.getElementById('javaInput').value; // Get the Java input
+    const converter = new JavaToPythonConverter();
+    const pythonCode = converter.convert(javaCode); // Translate Java to Python
     document.getElementById('pythonOutput').textContent = pythonCode; // Display Python code
 });
 
 // Add event listener for the "Copy Code" button
 document.getElementById('copyBtn').addEventListener('click', function() {
-    var pythonCode = document.getElementById('pythonOutput').textContent;
+    const pythonCode = document.getElementById('pythonOutput').textContent;
     navigator.clipboard.writeText(pythonCode).then(function() {
         alert('Python code copied to clipboard!');
     }, function(err) {
