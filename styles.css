@@ -1,45 +1,136 @@
+/* Global Styles */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     background-color: #f4f4f4;
-    padding: 20px;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    line-height: 1.6;
 }
 
 .container {
     max-width: 600px;
-    margin: auto;
+    margin: 40px auto; /* Increased top margin for better spacing */
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Softer, larger shadow */
+    transition: all 0.3s ease-in-out; /* Smooth hover effect for container */
+}
+
+.container:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Increase shadow on hover */
+    transform: translateY(-5px); /* Slight elevation on hover */
 }
 
 h1, h2 {
     text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+h1 {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #007BFF;
+}
+
+h2 {
+    font-size: 1.5em;
+    color: #555;
+    margin-top: 0;
 }
 
 textarea {
     width: 100%;
-    height: 200px;
+    height: 220px; /* Slightly larger textarea for better visibility */
     margin-bottom: 20px;
+    padding: 12px;
+    font-size: 1em;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    resize: none; /* Disallow manual resizing */
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #007BFF; /* Highlight border on focus */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Subtle glow */
 }
 
 button {
     display: block;
     width: 100%;
-    padding: 10px;
+    padding: 15px;
     background-color: #007BFF;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+    margin-bottom: 20px; /* Space between button and output */
 }
 
 button:hover {
     background-color: #0056b3;
+    transform: scale(1.05); /* Slight scaling on hover */
+}
+
+button:active {
+    background-color: #004085; /* Darker shade when button is pressed */
+    transform: scale(1);
 }
 
 pre {
     background: #eaeaea;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 1em;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 20px;
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    h2 {
+        font-size: 1.25em;
+    }
+
+    textarea {
+        height: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.8em;
+    }
+
+    h2 {
+        font-size: 1.1em;
+    }
+
+    textarea {
+        height: 150px;
+    }
+
+    button {
+        font-size: 1em;
+        padding: 12px;
+    }
 }
