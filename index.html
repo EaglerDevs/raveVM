@@ -21,8 +21,8 @@
             background-color: #f0f0f0;
             padding: 10px;
             border: 1px solid #ccc;
-            white-space: pre-wrap; /* Keep formatting */
-            word-wrap: break-word; /* Wrap long lines */
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
     </style>
 </head>
@@ -61,7 +61,7 @@
                     continue;
                 }
 
-                // Handle keywords and identifiers
+                // Handle keywords, identifiers, and types
                 if (/[a-zA-Z]/.test(char)) {
                     let start = this.current;
                     while (/[a-zA-Z0-9]/.test(this.input[this.current])) {
@@ -72,30 +72,19 @@
                 }
 
                 // Handle symbols
-                if (char === '{') {
-                    this.current++;
-                    return new Token('LBRACE', '{');
+                switch (char) {
+                    case '{': this.current++; return new Token('LBRACE', '{');
+                    case '}': this.current++; return new Token('RBRACE', '}');
+                    case ';': this.current++; return new Token('SEMICOLON', ';');
+                    case '(': this.current++; return new Token('LPAREN', '(');
+                    case ')': this.current++; return new Token('RPAREN', ')');
+                    case '=': this.current++; return new Token('ASSIGN', '=');
+                    case '+': this.current++; return new Token('PLUS', '+');
+                    case '-': this.current++; return new Token('MINUS', '-');
+                    case '*': this.current++; return new Token('MULTIPLY', '*');
+                    case '/': this.current++; return new Token('DIVIDE', '/');
                 }
-                if (char === '}') {
-                    this.current++;
-                    return new Token('RBRACE', '}');
-                }
-                if (char === ';') {
-                    this.current++;
-                    return new Token('SEMICOLON', ';');
-                }
-                if (char === '(') {
-                    this.current++;
-                    return new Token('LPAREN', '(');
-                }
-                if (char === ')') {
-                    this.current++;
-                    return new Token('RPAREN', ')');
-                }
-                if (char === '=') {
-                    this.current++;
-                    return new Token('ASSIGN', '=');
-                }
+
                 if (char === 'i' && this.input.substr(this.current, 1) === 'f') {
                     this.current += 2;
                     return new Token('IF', 'if');
@@ -125,8 +114,9 @@
         statement() {
             if (this.currentToken.type === 'IF') {
                 return this.ifStatement();
+            } else if (this.currentToken.type === 'IDENTIFIER') {
+                return this.assignment();
             }
-            // Handle other statements...
             throw new Error('Unknown statement type');
         }
 
@@ -142,12 +132,27 @@
             return { type: 'IF', condition, body };
         }
 
-        body() {
-            // Simplified for demo, would parse multiple statements
-            const statement = this.currentToken.value; // Placeholder
-            this.eat('IDENTIFIER'); // consume statement
+        assignment() {
+            const varName = this.currentToken.value;
+            this.eat('IDENTIFIER');
+            this.eat('ASSIGN');
+            const value = this.currentToken.value; // Simplified for demo
+            this.eat('IDENTIFIER'); // consume value
             this.eat('SEMICOLON');
-            return [statement];
+            return { type: 'ASSIGNMENT', varName, value };
+        }
+
+        body() {
+            const statements = [];
+            while (this.currentToken.type !== 'RBRACE') {
+                if (this.currentToken.type === 'IDENTIFIER') {
+                    statements.push(this.assignment());
+                }
+                if (this.currentToken.type === 'IF') {
+                    statements.push(this.ifStatement());
+                }
+            }
+            return statements;
         }
 
         eat(tokenType) {
@@ -171,22 +176,22 @@
         generatePython(statements) {
             return statements.map(statement => {
                 if (statement.type === 'IF') {
-                    return `if ${statement.condition}:\n    ${statement.body.join('\n    ')}`;
+                    return `if ${statement.condition}:\n    ${statement.body.map(stmt => `${stmt.varName} = ${stmt.value}`).join('\n    ')}`;
+                } else if (statement.type === 'ASSIGNMENT') {
+                    return `${statement.varName} = ${statement.value}`;
                 }
                 return '';
             }).join('\n');
         }
     }
 
-    // Add event listener to the "Translate" button
     document.getElementById('translateBtn').addEventListener('click', function() {
-        const javaCode = document.getElementById('javaInput').value; // Get the Java input
+        const javaCode = document.getElementById('javaInput').value;
         const converter = new JavaToPythonConverter();
-        const pythonCode = converter.convert(javaCode); // Translate Java to Python
-        document.getElementById('pythonOutput').textContent = pythonCode; // Display Python code
+        const pythonCode = converter.convert(javaCode);
+        document.getElementById('pythonOutput').textContent = pythonCode;
     });
 
-    // Add event listener for the "Copy Code" button
     document.getElementById('copyBtn').addEventListener('click', function() {
         const pythonCode = document.getElementById('pythonOutput').textContent;
         navigator.clipboard.writeText(pythonCode).then(function() {
